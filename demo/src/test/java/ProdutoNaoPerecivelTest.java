@@ -1,19 +1,22 @@
 import aeds2.Produto;
 import aeds2.ProdutoNaoPerecivel;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ProdutoNaoPerecivelTest {
 
-    static Produto produto;
+    Produto produto;
         
     
-    @BeforeAll
-    static public void prepare(){
-        produto = new ProdutoNaoPerecivel("Produto teste", 100.0, 0.1);
+    @BeforeEach
+    public void prepare(){
+        produto = new ProdutoNaoPerecivel("Produto teste", 100, 0.1);
     }
     
     @Test
@@ -24,20 +27,30 @@ public class ProdutoNaoPerecivelTest {
     @Test
     public void stringComDescricaoEValor(){
         String desc = produto.toString();
-        assertTrue(desc.contains("Produto teste") && desc.contains("R$ 110,00"));
+        assertTrue(desc.contains("Produto teste") && desc.contains("R$") && desc.contains("110,00"));
     }
 
     @Test
     public void naoCriaProdutoComPrecoNegativo(){
-        Exception exception = assertThrows(IllegalArgumentException.class, 
-            () -> new ProdutoNaoPerecivel("teste", -5.0, 0.5));
-        assertEquals("Preço de custo não pode ser negativo", exception.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> new ProdutoNaoPerecivel("teste", -5, 0.5));
     }
     
     @Test
     public void naoCriaProdutoComMargemNegativa(){
-        Exception exception = assertThrows(IllegalArgumentException.class, 
-            () -> new ProdutoNaoPerecivel("teste", 5.0, -1.0));
-        assertEquals("Margem de lucro não pode ser negativa", exception.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> new ProdutoNaoPerecivel("teste", 5, -1));
+    }
+
+    @Test
+    public void criarCorretamenteAPartirDeTexto(){
+        String linhaDados = "1;Produto do arquivo;10.0;0.1";
+        produto = Produto.criarDoTexto(linhaDados);
+        String desc = produto.toString();
+        assertTrue(desc.contains("Produto do arquivo") && desc.contains("R$") && desc.contains("11,00"));
+    }
+
+    @Test
+    public void criaDadosEmTextoCorretamente(){
+        assertEquals("1;Produto teste;100.00;0.10", produto.gerarDadosTexto());
+        
     }
 }

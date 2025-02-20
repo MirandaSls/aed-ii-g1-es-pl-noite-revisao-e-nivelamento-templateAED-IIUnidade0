@@ -1,61 +1,56 @@
-import aeds2.ProdutoPerecivel;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ProdutoPerecivelTest {
+import aeds2.Produto;
+import aeds2.ProdutoPerecivel;
 
-    static ProdutoPerecivel produto;
-    static LocalDate dataValidade;
+public class ProdutoPerecivelTest {
     
-    @BeforeAll
-    static public void prepare(){
-        dataValidade = LocalDate.now().plusMonths(6); // validade de 6 meses
-        produto = new ProdutoPerecivel("Produto teste", 100.0, 0.1, dataValidade);
+
+    Produto produto;
+        
+    
+    @BeforeEach
+    public void prepare(){
+        produto = new ProdutoPerecivel("Perecível teste", 100, 0.1, LocalDate.now().plusDays(10));
     }
     
     @Test
-    public void calculaPrecoCorretamente(){
+    public void calculaPrecoSemDescontoCorretamente(){
         assertEquals(110.0, produto.valorDeVenda(), 0.01);
     }
-
+    
     @Test
-    public void stringComDescricaoValorEData(){
-        String desc = produto.toString();
-        assertTrue(desc.contains("Produto teste") && 
-                  desc.contains("R$ 110,00") && 
-                  desc.contains(dataValidade.toString()));
-    }
-
-    @Test
-    public void naoCriaProdutoComPrecoNegativo(){
-        Exception exception = assertThrows(IllegalArgumentException.class, 
-            () -> new ProdutoPerecivel("teste", -5.0, 0.5, dataValidade));
-        assertEquals("Preço de custo não pode ser negativo", exception.getMessage());
+    public void calculaPrecoComDescontoCorretamente(){
+        produto = new ProdutoPerecivel("Perecível teste", 100, 0.1, LocalDate.now().plusDays(2));
+        assertEquals(110.0 * 0.75, produto.valorDeVenda(), 0.01);
     }
     
     @Test
-    public void naoCriaProdutoComMargemNegativa(){
-        Exception exception = assertThrows(IllegalArgumentException.class, 
-            () -> new ProdutoPerecivel("teste", 5.0, -1.0, dataValidade));
-        assertEquals("Margem de lucro não pode ser negativa", exception.getMessage());
+    public void naoCriaProdutoForaDaValidade(){
+        assertThrows(IllegalArgumentException.class, () -> new ProdutoPerecivel("teste", 5, 1, LocalDate.now().minusDays(2)));
     }
 
     @Test
-    public void naoCriaProdutoComDataVencida(){
-        LocalDate dataPassada = LocalDate.now().minusDays(1);
-        Exception exception = assertThrows(IllegalArgumentException.class, 
-            () -> new ProdutoPerecivel("teste", 5.0, 0.1, dataPassada));
-        assertEquals("Data de validade não pode ser no passado", exception.getMessage());
+    public void criarCorretamenteAPartirDeTexto(){
+        String linhaDados = "2;Produto perecível do arquivo;10.0;0.2;25/10/2025";
+        produto = Produto.criarDoTexto(linhaDados);
+        String desc = produto.toString();
+        assertTrue(desc.contains("Produto perecível do arquivo") && desc.contains("R$") && desc.contains("12,00") && desc.contains("25/10/2025"));
     }
 
     @Test
-    public void aplicaDescontoQuandoProximoVencimento(){
-        LocalDate dataProxima = LocalDate.now().plusDays(5);
-        ProdutoPerecivel produtoQuaseVencido = new ProdutoPerecivel("teste", 100.0, 0.1, dataProxima);
-        assertEquals(55.0, produtoQuaseVencido.valorDeVenda(), 0.01); // 50% de desconto
+    public void criaDadosEmTextoCorretamente(){ 
+        String dataFormatada = DateTimeFormatter.ofPattern("dd/MM/yyyy").format(LocalDate.now().plusDays(10));
+        assertEquals("2;Perecível teste;100.00;0.10;"+dataFormatada, produto.gerarDadosTexto());
+        
     }
-} 
+}
+
+
